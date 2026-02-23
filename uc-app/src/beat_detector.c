@@ -54,5 +54,5 @@ void beat_detector_update(BeatDetector* detector, const float* samples, size_t n
 int beat_detector_is_beat(const BeatDetector* detector)
 {
     // A beat is detected if the current energy is significantly higher than the average energy
-    return (detector->energy > detector->threshold * detector->average_energy) && (detector->variance > 0.01f);
+    return (detector->energy > detector->threshold * detector->average_energy);
 }
