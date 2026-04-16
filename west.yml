@@ -18,3 +18,4 @@ manifest:
           - cmsis_6      # required by the ARM port
           - hal_nordic # required by the board (Nordic based)\
           - hal_atmel
+          - hal_espressif
