@@ -9,7 +9,7 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: main
+      revision: v4.3.0
       import:
         # By using name-allowlist we can clone only the modules that are
         # strictly needed by the application.
@@ -19,3 +19,4 @@ manifest:
           - hal_nordic # required by the board (Nordic based)\
           - hal_atmel
           - hal_espressif
+          - mcuboot
