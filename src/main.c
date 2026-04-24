@@ -8,6 +8,12 @@
 #include <zephyr/drivers/spi.h>
 #include <zephyr/sys/util.h>
 
+/* size of stack area used by each thread */
+#define STACKSIZE 1024
+
+/* scheduling priority used by each thread */
+#define PRIORITY 7
+
 #define STRIP_NODE		DT_ALIAS(led_strip)
 
 #if DT_NODE_HAS_PROP(DT_ALIAS(led_strip), chain_length)
@@ -36,6 +42,13 @@ int main(void)
 {
 	LOG_INF("Hello World! %s", CONFIG_BOARD_TARGET);
 
+	while (1) {
+		k_sleep(K_SECONDS(1));
+	}
+}
+
+static void led_thread(void)
+{
 	size_t color = 0;
 	int rc;
 
@@ -47,7 +60,7 @@ int main(void)
 	}
 
 	LOG_INF("Displaying pattern on strip");
-	while (1) {
+	for(;;) {
 		for (size_t cursor = 0; cursor < ARRAY_SIZE(pixels); cursor++) {
 			memset(&pixels, 0x00, sizeof(pixels));
 			memcpy(&pixels[cursor], &colors[color], sizeof(struct led_rgb));
@@ -62,6 +75,6 @@ int main(void)
 
 		color = (color + 1) % ARRAY_SIZE(colors);
 	}
-
-	return 0;
 }
+
+K_THREAD_DEFINE(led_thread_id, STACKSIZE, led_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
