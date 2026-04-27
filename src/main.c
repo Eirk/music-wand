@@ -38,12 +38,44 @@ static const struct device *const strip = DEVICE_DT_GET(STRIP_NODE);
 
 LOG_MODULE_REGISTER(main);
 
+K_MSGQ_DEFINE(btn_press_msgq, sizeof(uint32_t), 10, 1);
+
 int main(void)
 {
-	LOG_INF("Hello World! %s", CONFIG_BOARD_TARGET);
+	LOG_INF("Starting music wand firmware");
+
+	enum states {
+		STATE_SLEEP,
+		STATE_MUSIC,
+		STATE_FLICK,
+		NUM_STATES
+	} state = STATE_SLEEP;
+	enum states prev_state = NUM_STATES;
+
+	uint32_t btn_press;
 
 	while (1) {
-		k_sleep(K_SECONDS(1));
+		while(k_msgq_get(&btn_press_msgq, &btn_press, K_MSEC(100)) == 0) {
+			state++;
+			if(state >= NUM_STATES) {
+				state = 0;
+			}
+		}
+		switch(state) {
+			case STATE_SLEEP:
+				/* Handle sleep state */
+				break;
+			case STATE_MUSIC:
+				/* Handle music state */
+				break;
+			case STATE_FLICK:
+				/* Handle flick state */
+				break;
+		}
+		if(state != prev_state) {
+			LOG_INF("State changed to %d", state);
+			prev_state = state;
+		}
 	}
 }
 
@@ -56,7 +88,7 @@ static void led_thread(void)
 		LOG_INF("Found LED strip device %s", strip->name);
 	} else {
 		LOG_ERR("LED strip device %s is not ready", strip->name);
-		return 0;
+		return;
 	}
 
 	LOG_INF("Displaying pattern on strip");
