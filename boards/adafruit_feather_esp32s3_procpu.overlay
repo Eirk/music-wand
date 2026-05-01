@@ -1,10 +1,9 @@
-// TODO: need to cross reference feather pins with esp32s3 pins to determine which i2s pins to use
 &i2s0_default {
 	group1 {
-		pinmux = <I2S0_O_WS_GPIO36>,
-			 <I2S0_O_BCK_GPIO37>,
-			 <I2S0_O_SD_GPIO38>,
-			 <I2S0_I_SD_GPIO41>;
+		pinmux = <I2S0_O_WS_GPIO16>,
+			 <I2S0_O_BCK_GPIO17>,
+			//  <I2S0_O_SD_GPIO38>,
+			 <I2S0_I_SD_GPIO18>;
 	};
 };
 

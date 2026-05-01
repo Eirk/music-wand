@@ -67,9 +67,15 @@ int main(void)
 				break;
 			case STATE_MUSIC:
 				/* Handle music state */
+				if(state != prev_state) {
+					// first state entry, suspend mic thread
+				}
 				break;
 			case STATE_FLICK:
 				/* Handle flick state */
+				if(state != prev_state) {
+					// first state entry, suspend mic thread
+				}
 				break;
 		}
 		if(state != prev_state) {
