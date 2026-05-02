@@ -18,3 +18,18 @@
 LOG_MODULE_REGISTER(i2s_mic);
 
 #define I2S_RX_NODE  DT_NODELABEL(i2s_rx)
+
+static const struct device *i2s_dev;
+
+void i2s_mic_thread(void)
+{
+    const struct device *i2s_dev = DEVICE_DT_GET(I2S_RX_NODE);
+
+    struct i2s_config i2s_cfg = {
+        .word_size = SAMPLE_BIT_WIDTH,
+        .channels = NUMBER_OF_CHANNELS,
+        .format = I2S_FMT_DATA_FORMAT_I2S,
+        .options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER,
+        .frame_clk_freq = SAMPLE_FREQUENCY,
+    };
+}

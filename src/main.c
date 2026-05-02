@@ -8,6 +8,8 @@
 #include <zephyr/drivers/spi.h>
 #include <zephyr/sys/util.h>
 
+#include "i2s_mic.h"
+
 /* size of stack area used by each thread */
 #define STACKSIZE 1024
 
