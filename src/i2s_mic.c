@@ -73,7 +73,7 @@ void i2s_mic_thread(void)
     }
 
     for(;;) {
-        void * mem_block;
+        void *mem_block;
         uint32_t block_size;
 
         ret = i2s_read(i2s_dev, &mem_block, &block_size);
@@ -85,7 +85,15 @@ void i2s_mic_thread(void)
         /* Process the audio data in mem_block of size block_size (should be SAMPLES_PER_BLOCK number of samples) */
         int32_t *samples = (int32_t *)mem_block;
         int num_samples = block_size / BYTES_PER_SAMPLE;
-        
+        // convert samples to float and normalize to [-1.0, 1.0]
+        const float float_samples[SAMPLES_PER_BLOCK];
+        for (int i = 0; i < num_samples; i++) {
+            float_samples[i] = (float)samples[i] / (float)((1 << 31) - 1); // sph0645 reads 24 bit data MSB first
+        }
 
+        beat_detector_update(beat_detector, float_samples, num_samples);
+        if(beat_detector_is_beat(beat_detector)) {
+            LOG_INF("Beat detected! Energy: %.6f, Threshold: %.6f", beat_detector->energy, beat_detector->threshold);
+        }
     }
 }
