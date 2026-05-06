@@ -79,6 +79,10 @@ int main(void)
 					// first state entry, suspend mic thread
 				}
 				break;
+			default:
+				LOG_ERR("Invalid state: %d", state);
+				state = STATE_SLEEP;
+				break;
 		}
 		if(state != prev_state) {
 			LOG_INF("State changed to %d", state);
@@ -118,3 +122,4 @@ static void led_thread(void)
 }
 
 K_THREAD_DEFINE(led_thread_id, STACKSIZE, led_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(i2s_mic_thread_id, STACKSIZE, i2s_mic_thread, NULL, NULL, NULL, PRIORITY, 0, 0);

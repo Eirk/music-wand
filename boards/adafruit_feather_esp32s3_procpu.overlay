@@ -1,10 +1,19 @@
-&i2s0_default {
-	group1 {
-		pinmux = <I2S0_O_WS_GPIO16>,
-			 <I2S0_O_BCK_GPIO17>,
-			//  <I2S0_O_SD_GPIO38>,
-			 <I2S0_I_SD_GPIO18>;
+
+&pinctrl {
+	i2s0_default: i2s0_default {
+		group1 {
+			pinmux = <I2S0_O_WS_GPIO16>, 	// feather pin A2
+				<I2S0_O_BCK_GPIO17>,		// feather pin A1
+				//  <I2S0_O_SD_GPIO38>,
+				<I2S0_I_SD_GPIO18>;			// feather pin A0
+			input-enable;
+		};
 	};
+};
+
+&i2s0 {
+	pinctrl-0 = <&i2s0_default>;
+	pinctrl-names = "default";
 };
 
 i2s_rx: &i2s0 {

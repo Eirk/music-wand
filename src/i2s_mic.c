@@ -6,8 +6,6 @@
 #include <zephyr/device.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/i2s.h>
-#include <zephyr/drivers/gpio.h>
-#include <zephyr/audio/codec.h>
 
 #include "i2s_mic.h"
 #include "beat_detector.h"
@@ -15,7 +13,7 @@
 #define SAMPLE_FREQUENCY    44100
 #define SAMPLE_BIT_WIDTH    24
 #define BYTES_PER_SAMPLE    sizeof(int32_t) /* 24-bit samples are stored in 32-bit integers */
-#define NUMBER_OF_CHANNELS  1
+#define NUMBER_OF_CHANNELS  2
 #define SAMPLES_PER_BLOCK    1024
 
 #define BLOCK_SIZE (SAMPLES_PER_BLOCK * NUMBER_OF_CHANNELS * BYTES_PER_SAMPLE)
@@ -27,23 +25,21 @@ LOG_MODULE_REGISTER(i2s_mic);
 
 #define I2S_RX_NODE  DT_NODELABEL(i2s_rx)
 
-static const struct device *i2s_dev;
-
 void i2s_mic_thread(void)
 {
     int ret;
 
     const struct device *i2s_dev = DEVICE_DT_GET(I2S_RX_NODE);
-    const BeatDetector *beat_detector = NULL;
+    BeatDetector *beat_detector = NULL;
 
     LOG_INF("Initializing I2S microphone...");
 
     if (!device_is_ready(i2s_dev)) {
 		LOG_ERR("%s is not ready", i2s_dev->name);
-		return 0;
+		return;
 	}
 
-    struct i2s_config i2s_cfg = {
+    const struct i2s_config i2s_cfg = {
         .word_size = SAMPLE_BIT_WIDTH,
         .channels = NUMBER_OF_CHANNELS,
         .format = I2S_FMT_DATA_FORMAT_I2S,
@@ -51,6 +47,7 @@ void i2s_mic_thread(void)
         .frame_clk_freq = SAMPLE_FREQUENCY,
         .block_size = BLOCK_SIZE,
         .timeout = 1000,
+        .mem_slab = &mem_slab,
     };
 
     beat_detector = (BeatDetector *)k_malloc(sizeof(BeatDetector));
@@ -77,23 +74,28 @@ void i2s_mic_thread(void)
         uint32_t block_size;
 
         ret = i2s_read(i2s_dev, &mem_block, &block_size);
-        if (ret < 0) {
+        if(ret == 0) {
+            LOG_INF("Received audio block of size %d bytes", block_size);
+        } else if (ret < 0) {
             LOG_ERR("Failed to read from I2S RX stream: %d", ret);
-            break;
         }
+        // if (ret < 0) {
+        //     LOG_ERR("Failed to read from I2S RX stream: %d", ret);
+        //     break;
+        // }
 
         /* Process the audio data in mem_block of size block_size (should be SAMPLES_PER_BLOCK number of samples) */
         int32_t *samples = (int32_t *)mem_block;
         int num_samples = block_size / BYTES_PER_SAMPLE;
         // convert samples to float and normalize to [-1.0, 1.0]
-        const float float_samples[SAMPLES_PER_BLOCK];
-        for (int i = 0; i < num_samples; i++) {
-            float_samples[i] = (float)samples[i] / (float)((1 << 31) - 1); // sph0645 reads 24 bit data MSB first
-        }
+        // float float_samples[SAMPLES_PER_BLOCK];
+        // for (int i = 0; i < num_samples; i++) {
+        //     float_samples[i] = (float)samples[i] / (float)(0x7fffffff); // sph0645 reads 24 bit data MSB first
+        // }
 
-        beat_detector_update(beat_detector, float_samples, num_samples);
-        if(beat_detector_is_beat(beat_detector)) {
-            LOG_INF("Beat detected! Energy: %.6f, Threshold: %.6f", beat_detector->energy, beat_detector->threshold);
-        }
+        // beat_detector_update(beat_detector, float_samples, num_samples);
+        // if(beat_detector_is_beat(beat_detector)) {
+        //     // LOG_INF("Beat detected! Energy: %.6f, Threshold: %.6f", beat_detector->energy, beat_detector->threshold);
+        // }
     }
 }

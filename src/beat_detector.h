@@ -17,7 +17,7 @@ typedef struct {
 BeatDetector * beat_detector_create(void);
 void beat_detector_init(BeatDetector *detector);
 void beat_detector_update(BeatDetector *detector, const float* samples, int num_samples);
-int beat_detector_is_beat(const BeatDetector *detector);
+int beat_detector_is_beat(BeatDetector *detector);
 void beat_detector_destroy(BeatDetector *detector);
 
 #endif // _BEAT_DETECTOR_H_
