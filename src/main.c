@@ -103,6 +103,8 @@ static void led_thread(void)
 		return;
 	}
 
+	k_msleep(1000); /* Wait for other threads to initialize */
+
 	LOG_INF("Displaying pattern on strip");
 	for(;;) {
 		for (size_t cursor = 0; cursor < ARRAY_SIZE(pixels); cursor++) {
@@ -122,4 +124,4 @@ static void led_thread(void)
 }
 
 K_THREAD_DEFINE(led_thread_id, STACKSIZE, led_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
-K_THREAD_DEFINE(i2s_mic_thread_id, STACKSIZE, i2s_mic_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(i2s_mic_thread_id, STACKSIZE, i2s_mic_thread, NULL, NULL, NULL, PRIORITY - 1, 0, 0);

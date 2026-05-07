@@ -75,27 +75,27 @@ void i2s_mic_thread(void)
 
         ret = i2s_read(i2s_dev, &mem_block, &block_size);
         if(ret == 0) {
-            LOG_INF("Received audio block of size %d bytes", block_size);
+            // LOG_INF("RX audio block size %d bytes @%p", block_size, mem_block);
+            
+            /* Process the audio data in mem_block of size block_size (should be SAMPLES_PER_BLOCK number of samples) */
+            int32_t *samples = (int32_t *)mem_block;
+            int num_samples = block_size / BYTES_PER_SAMPLE;
+            
+            /* Convert samples to float and normalize to [-1.0, 1.0] */
+            float float_samples[SAMPLES_PER_BLOCK];
+            for (int i = 0; i < num_samples; i++) {
+                float_samples[i] = (float)samples[i] / (float)(0x7fffffff); /* sph0645 reads 24 bit data MSB first */
+            }
+
+            beat_detector_update(beat_detector, float_samples, num_samples);
+            if(beat_detector_is_beat(beat_detector)) {
+                LOG_INF("Beat detected! Energy: %f, Threshold: %f", beat_detector->energy, beat_detector->threshold);
+            }
+            
+            /* Free the memory block back to the slab */
+            k_mem_slab_free(&mem_slab, mem_block);
         } else if (ret < 0) {
             LOG_ERR("Failed to read from I2S RX stream: %d", ret);
         }
-        // if (ret < 0) {
-        //     LOG_ERR("Failed to read from I2S RX stream: %d", ret);
-        //     break;
-        // }
-
-        /* Process the audio data in mem_block of size block_size (should be SAMPLES_PER_BLOCK number of samples) */
-        int32_t *samples = (int32_t *)mem_block;
-        int num_samples = block_size / BYTES_PER_SAMPLE;
-        // convert samples to float and normalize to [-1.0, 1.0]
-        // float float_samples[SAMPLES_PER_BLOCK];
-        // for (int i = 0; i < num_samples; i++) {
-        //     float_samples[i] = (float)samples[i] / (float)(0x7fffffff); // sph0645 reads 24 bit data MSB first
-        // }
-
-        // beat_detector_update(beat_detector, float_samples, num_samples);
-        // if(beat_detector_is_beat(beat_detector)) {
-        //     // LOG_INF("Beat detected! Energy: %.6f, Threshold: %.6f", beat_detector->energy, beat_detector->threshold);
-        // }
     }
 }
