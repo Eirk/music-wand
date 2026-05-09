@@ -93,6 +93,11 @@ void i2s_mic_thread(void)
             // printk("Energy: %.6f, Threshold: %.6f\n", (double)beat_detector->energy, (double)beat_detector->threshold);
             if(beat_detector_is_beat(beat_detector)) {
                 printk("Beat detected! Energy: %.6f, Threshold: %.6f\n", (double)beat_detector->energy, (double)beat_detector->threshold);
+                struct beat_msg msg = {
+                    .event_code = 1,  // e.g., 1 for beat
+                    .energy = beat_detector->energy
+                };
+                k_msgq_put(&beat_msgq, &msg, K_NO_WAIT);
             }
             
             /* Free the memory block back to the slab */

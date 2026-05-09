@@ -4,8 +4,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/led_strip.h>
+#include <zephyr/input/input.h>
 #include <zephyr/device.h>
-#include <zephyr/drivers/spi.h>
 #include <zephyr/sys/util.h>
 
 #include "i2s_mic.h"
@@ -41,6 +41,20 @@ static const struct device *const strip = DEVICE_DT_GET(STRIP_NODE);
 LOG_MODULE_REGISTER(main);
 
 K_MSGQ_DEFINE(btn_press_msgq, sizeof(uint32_t), 10, 1);
+K_MSGQ_DEFINE(beat_msgq, sizeof(struct beat_msg), 10, 1);
+
+static void button_input_cb(struct input_event *evt, void *user_data)
+{
+	if (evt->sync == 0) {
+		return;
+	}
+
+	printk("Button %d %s at %" PRIu32 "\n",
+	       evt->code,
+	       evt->value ? "pressed" : "released",
+	       k_cycle_get_32());
+}
+INPUT_CALLBACK_DEFINE(NULL, button_input_cb, NULL);
 
 int main(void)
 {
@@ -107,6 +121,11 @@ static void led_thread(void)
 
 	LOG_INF("Displaying pattern on strip");
 	for(;;) {
+		struct beat_msg msg;
+		while(k_msgq_get(&beat_msgq, &msg, K_MSEC(100)) == 0) {
+			/* Handle beat message */
+			LOG_INF("Received beat message with energy: %.6f", (double)msg.energy);
+		}
 		for (size_t cursor = 0; cursor < ARRAY_SIZE(pixels); cursor++) {
 			memset(&pixels, 0x00, sizeof(pixels));
 			memcpy(&pixels[cursor], &colors[color], sizeof(struct led_rgb));
