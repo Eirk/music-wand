@@ -30,7 +30,7 @@ void i2s_mic_thread(void)
     int ret;
 
     const struct device *i2s_dev = DEVICE_DT_GET(I2S_RX_NODE);
-    BeatDetector *beat_detector = NULL;
+    static BeatDetector *beat_detector = NULL;
 
     LOG_INF("Initializing I2S microphone...");
 
@@ -75,21 +75,24 @@ void i2s_mic_thread(void)
 
         ret = i2s_read(i2s_dev, &mem_block, &block_size);
         if(ret == 0) {
-            // LOG_INF("RX audio block size %d bytes @%p", block_size, mem_block);
-            
             /* Process the audio data in mem_block of size block_size (should be SAMPLES_PER_BLOCK number of samples) */
             int32_t *samples = (int32_t *)mem_block;
-            int num_samples = block_size / BYTES_PER_SAMPLE;
-            
+            int num_samples = block_size / BYTES_PER_SAMPLE / NUMBER_OF_CHANNELS; /* Total samples in the block (for all channels) */
+            if(num_samples != SAMPLES_PER_BLOCK) {
+                LOG_WRN("Expected %d samples per block, but got %d", SAMPLES_PER_BLOCK, num_samples);
+            }
+            printk("first samples: %d, %d\n", samples[0], samples[1]);
+
             /* Convert samples to float and normalize to [-1.0, 1.0] */
-            float float_samples[SAMPLES_PER_BLOCK];
-            for (int i = 0; i < num_samples; i++) {
-                float_samples[i] = (float)samples[i] / (float)(0x7fffffff); /* sph0645 reads 24 bit data MSB first */
+            float float_samples[SAMPLES_PER_BLOCK] = {0};
+            for (int i = 0; i < num_samples; i++) { // for now we only process the first channel (left)
+                float_samples[i] = (float)samples[i * NUMBER_OF_CHANNELS] / (float)(0x7fffffff); /* sph0645 reads 24 bit data MSB first */
             }
 
             beat_detector_update(beat_detector, float_samples, num_samples);
+            // printk("Energy: %.6f, Threshold: %.6f\n", (double)beat_detector->energy, (double)beat_detector->threshold);
             if(beat_detector_is_beat(beat_detector)) {
-                LOG_INF("Beat detected! Energy: %f, Threshold: %f", beat_detector->energy, beat_detector->threshold);
+                printk("Beat detected! Energy: %.6f, Threshold: %.6f\n", (double)beat_detector->energy, (double)beat_detector->threshold);
             }
             
             /* Free the memory block back to the slab */
@@ -98,4 +101,5 @@ void i2s_mic_thread(void)
             LOG_ERR("Failed to read from I2S RX stream: %d", ret);
         }
     }
+    k_free(beat_detector);
 }

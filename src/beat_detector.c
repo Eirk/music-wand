@@ -1,6 +1,9 @@
-#include "beat_detector.h"
 #include <string.h>
 #include <stdlib.h>
+
+#include <zephyr/kernel.h>
+
+#include "beat_detector.h"
 
 BeatDetector* beat_detector_create(void)
 {
@@ -21,7 +24,7 @@ void beat_detector_init(BeatDetector* detector)
     detector->threshold = BASE_THRESHOLD; // Threshold multiplier for beat detection
 }
 
-void beat_detector_update(BeatDetector* detector, const float* samples, int num_samples)
+void beat_detector_update(BeatDetector* detector, float* samples, int num_samples)
 {
     // Calculate energy of the current frame
     float energy = 0.0f;
