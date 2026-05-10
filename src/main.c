@@ -122,12 +122,81 @@ int main(void)
 	}
 }
 
+static void hsv2rgb(uint16_t hue, uint8_t saturation, uint8_t value, struct led_rgb *rgb)
+{
+	uint8_t r, g, b;
+	uint8_t region;
+	uint16_t remainder;
+	uint16_t p, q, t;
+	uint16_t v = value;
+	uint16_t s = saturation;
+
+	if (hue >= 360U) {
+		hue %= 360U;
+	}
+
+	if (s == 0U) {
+		/* Achromatic (grey) */
+		r = g = b = (uint8_t)v;
+		rgb->r = r;
+		rgb->g = g;
+		rgb->b = b;
+		return;
+	}
+
+	region = hue / 60U;
+	remainder = (hue % 60U) * 255U / 60U;
+
+	p = (v * (255U - s)) / 255U;
+	q = (v * (255U - ((s * remainder) / 255U))) / 255U;
+	t = (v * (255U - ((s * (255U - remainder)) / 255U))) / 255U;
+
+	switch (region) {
+	case 0:
+		r = (uint8_t)v;
+		g = (uint8_t)t;
+		b = (uint8_t)p;
+		break;
+	case 1:
+		r = (uint8_t)q;
+		g = (uint8_t)v;
+		b = (uint8_t)p;
+		break;
+	case 2:
+		r = (uint8_t)p;
+		g = (uint8_t)v;
+		b = (uint8_t)t;
+		break;
+	case 3:
+		r = (uint8_t)p;
+		g = (uint8_t)q;
+		b = (uint8_t)v;
+		break;
+	case 4:
+		r = (uint8_t)t;
+		g = (uint8_t)p;
+		b = (uint8_t)v;
+		break;
+	case 5:
+	default:
+		r = (uint8_t)v;
+		g = (uint8_t)p;
+		b = (uint8_t)q;
+		break;
+	}
+	rgb->r = r;
+	rgb->g = g;
+	rgb->b = b;
+}
+
 static void led_thread(void)
 {
 	int rc;
 	const uint8_t attack = 0xf0;
-	const uint8_t release = 0x0a;
+	uint8_t release = 0x0a;
+	uint8_t release_rate = 7;
 	uint8_t brightness = 0;
+	uint16_t hue = 0;
 
 	static struct led_rgb color = {
 		.r = 0,
@@ -148,13 +217,12 @@ static void led_thread(void)
 	for(;;) {
 		struct beat_msg msg;
 		while(k_msgq_get(&beat_msgq, &msg, K_NO_WAIT) == 0) {
-			/* Handle beat message */
+			/* when a beat occurs, slam the brightness up */
 			LOG_INF("Received beat message with energy: %.6f", (double)msg.energy);
 			brightness = (uint8_t)(msg.energy * attack);
 		}
-		color.r = brightness;
-		color.g = brightness;
-		color.b = brightness;
+		hue = (hue + 1) % 360;
+		hsv2rgb(hue, 0xff, brightness, &color);
 		// write the color to the LED strip
 		for (size_t cursor = 0; cursor < ARRAY_SIZE(pixels); cursor++) {
 			memset(&pixels, 0x00, sizeof(pixels));
@@ -166,6 +234,11 @@ static void led_thread(void)
 			}
 		}
 
+		// release the brightness
+		release = brightness / release_rate;
+		if (release == 0) {
+			release = 1;
+		}
 		if (brightness < release) {
 			brightness = 0;
 		} else {
