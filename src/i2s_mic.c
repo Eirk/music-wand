@@ -81,7 +81,7 @@ void i2s_mic_thread(void)
             if(num_samples != SAMPLES_PER_BLOCK) {
                 LOG_WRN("Expected %d samples per block, but got %d", SAMPLES_PER_BLOCK, num_samples);
             }
-            printk("first samples: %d, %d\n", samples[0], samples[1]);
+            // printk("first samples: %d, %d\n", samples[0], samples[1]);
 
             /* Convert samples to float and normalize to [-1.0, 1.0] */
             float float_samples[SAMPLES_PER_BLOCK] = {0};
