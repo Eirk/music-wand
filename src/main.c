@@ -7,6 +7,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/device.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/drivers/fuel_gauge.h>
 #include <inttypes.h>
 
 #include "i2s_mic.h"
@@ -50,6 +51,8 @@ int main(void)
 {
 	int ret;
 
+	const struct device *const fuel_gauge_dev = DEVICE_DT_GET(DT_ALIAS(fuel_gauge0));
+
 	LOG_INF("Starting music wand firmware");
 
 	if (!gpio_is_ready_dt(&button)) {
@@ -76,6 +79,34 @@ int main(void)
 	gpio_init_callback(&button_cb_data, button_input_cb, BIT(button.pin));
 	gpio_add_callback(button.port, &button_cb_data);
 	LOG_INF("Set up button at %s pin %d\n", button.port->name, button.pin);
+
+	// set up fuel gauge
+	if (fuel_gauge_dev == NULL) {
+		LOG_ERR("no device found.");
+		return 0;
+	}
+
+	if (!device_is_ready(fuel_gauge_dev)) {
+		LOG_ERR("Error: Device \"%s\" is not ready; check the driver initialization logs "
+			"for errors.",
+			fuel_gauge_dev->name);
+		return 0;
+	}
+
+	fuel_gauge_prop_t poll_props[] = {
+			FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE,
+			FUEL_GAUGE_VOLTAGE,
+		};
+
+	union fuel_gauge_prop_val poll_vals[ARRAY_SIZE(poll_props)];
+
+	ret = fuel_gauge_get_props(fuel_gauge_dev, poll_props, poll_vals, ARRAY_SIZE(poll_props));
+	if (ret < 0) {
+		LOG_ERR("Error: cannot get properties");
+	} else {
+		LOG_INF("Fuel gauge data: Charge: %d%%, Voltage: %dmV",
+			poll_vals[0].relative_state_of_charge, poll_vals[1].voltage / 1000);
+	}
 
 	enum states {
 		STATE_SLEEP,
@@ -219,7 +250,8 @@ static void led_thread(void)
 		while(k_msgq_get(&beat_msgq, &msg, K_NO_WAIT) == 0) {
 			/* when a beat occurs, slam the brightness up */
 			LOG_INF("Received beat message with energy: %.6f", (double)msg.energy);
-			brightness = (uint8_t)(msg.energy * attack);
+			// brightness = (uint8_t)(msg.energy * attack);
+			brightness = attack;
 		}
 		hue = (hue + 1) % 360;
 		hsv2rgb(hue, 0xff, brightness, &color);
