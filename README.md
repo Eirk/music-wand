@@ -1,4 +1,4 @@
-# I Wonder What Happens if I...
+# Miku Miku Wand!!!!
 
 ![img1](./readme_refs/Neru_Hitting_Miku_In_The_Head_With_A_Leek.gif)
 

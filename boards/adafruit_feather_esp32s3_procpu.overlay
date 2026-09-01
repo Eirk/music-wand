@@ -1,3 +1,18 @@
+#include <zephyr/dt-bindings/sensor/ism330dhcx.h>
+
+&i2c0 {
+    status = "okay";
+
+    st_ism330dhcx: ism330dhcx@6a {
+        compatible = "st,ism330dhcx";
+        reg = <0x6a>;
+        accel-range = <4>;       /* ±4g full scale */
+        accel-odr = <ISM330DHCX_DT_ODR_104Hz>;       /* 104 Hz output data rate */
+        gyro-range = <2000>;     /* ±2000 dps */
+        gyro-odr = <ISM330DHCX_DT_ODR_104Hz>;   /* 104 Hz output data rate */
+    };
+};
+
 
 &pinctrl {
 	i2s0_default: i2s0_default {

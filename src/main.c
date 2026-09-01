@@ -11,6 +11,7 @@
 #include <inttypes.h>
 
 #include "i2s_mic.h"
+#include "imu_manager.h"
 
 /* size of stack area used by each thread */
 #define STACKSIZE 1024
@@ -284,5 +285,6 @@ static void fuel_gauge_thread(void)
 }
 
 K_THREAD_DEFINE(led_thread_id, STACKSIZE * 2, led_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
-K_THREAD_DEFINE(i2s_mic_thread_id, STACKSIZE * 8, i2s_mic_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+// K_THREAD_DEFINE(i2s_mic_thread_id, STACKSIZE * 8, i2s_mic_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
 K_THREAD_DEFINE(fuel_gauge_thread_id, STACKSIZE * 2, fuel_gauge_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(imu_thread_id, IMU_STACK_SIZE, imu_thread, NULL, NULL, NULL, IMU_PRIORITY, 0, 0);
