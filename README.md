@@ -15,7 +15,7 @@ If you haven't already, source the zephyr virtual environment so you can use the
 source <path/to/activate> 
 ```
 
-Initialize a zephyr workspace with
+Initialize a zephyr workspace with ( example below uses ssh git clone but you can use https too)
 ```
 west init -m git@github.com:Eirk/music-wand.git <workspace name>
 cd <workspace name>
