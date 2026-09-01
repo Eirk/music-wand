@@ -51,8 +51,6 @@ int main(void)
 {
 	int ret;
 
-	const struct device *const fuel_gauge_dev = DEVICE_DT_GET(DT_ALIAS(fuel_gauge0));
-
 	LOG_INF("Starting music wand firmware");
 
 	if (!gpio_is_ready_dt(&button)) {
@@ -79,34 +77,6 @@ int main(void)
 	gpio_init_callback(&button_cb_data, button_input_cb, BIT(button.pin));
 	gpio_add_callback(button.port, &button_cb_data);
 	LOG_INF("Set up button at %s pin %d\n", button.port->name, button.pin);
-
-	// set up fuel gauge
-	if (fuel_gauge_dev == NULL) {
-		LOG_ERR("no device found.");
-		return 0;
-	}
-
-	if (!device_is_ready(fuel_gauge_dev)) {
-		LOG_ERR("Error: Device \"%s\" is not ready; check the driver initialization logs "
-			"for errors.",
-			fuel_gauge_dev->name);
-		return 0;
-	}
-
-	fuel_gauge_prop_t poll_props[] = {
-			FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE,
-			FUEL_GAUGE_VOLTAGE,
-		};
-
-	union fuel_gauge_prop_val poll_vals[ARRAY_SIZE(poll_props)];
-
-	ret = fuel_gauge_get_props(fuel_gauge_dev, poll_props, poll_vals, ARRAY_SIZE(poll_props));
-	if (ret < 0) {
-		LOG_ERR("Error: cannot get properties");
-	} else {
-		LOG_INF("Fuel gauge data: Charge: %d%%, Voltage: %dmV",
-			poll_vals[0].relative_state_of_charge, poll_vals[1].voltage / 1000);
-	}
 
 	enum states {
 		STATE_SLEEP,
@@ -280,5 +250,39 @@ static void led_thread(void)
 	}
 }
 
+static void fuel_gauge_thread(void)
+{
+	const struct device *const fuel_gauge_dev = DEVICE_DT_GET(DT_ALIAS(fuel_gauge0));
+
+	if (fuel_gauge_dev == NULL) {
+		LOG_ERR("no device found.");
+		return;
+	}
+
+	if (!device_is_ready(fuel_gauge_dev)) {
+		LOG_ERR("Error: Device \"%s\" is not ready", fuel_gauge_dev->name);
+		return;
+	}
+
+	fuel_gauge_prop_t poll_props[] = {
+			FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE,
+			FUEL_GAUGE_VOLTAGE,
+		};
+
+	union fuel_gauge_prop_val poll_vals[ARRAY_SIZE(poll_props)];
+
+	while(1) {
+		int ret = fuel_gauge_get_props(fuel_gauge_dev, poll_props, poll_vals, ARRAY_SIZE(poll_props));
+		if (ret < 0) {
+			LOG_ERR("Error: cannot get properties");
+		} else {
+			LOG_INF("Fuel gauge data: Charge: %d%%, Voltage: %dmV",
+				poll_vals[0].relative_state_of_charge, poll_vals[1].voltage / 1000);
+		}
+		k_msleep(1000);
+	}
+}
+
 K_THREAD_DEFINE(led_thread_id, STACKSIZE * 2, led_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
 K_THREAD_DEFINE(i2s_mic_thread_id, STACKSIZE * 8, i2s_mic_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(fuel_gauge_thread_id, STACKSIZE * 2, fuel_gauge_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
